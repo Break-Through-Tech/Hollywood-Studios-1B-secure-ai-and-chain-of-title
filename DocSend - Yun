@@ -1,0 +1,197 @@
+# Secure Document Sharing — High-Level Plan
+
+## Goal
+
+Improve HSI's existing document sharing feature so creators can safely share their screenplays and decks, control access, and understand how recipients engage with them.
+Start with PDF documents. Add implementation details to each milestone when we are ready to work on it.
+
+## First release
+
+The first complete experience should be:
+
+**Upload a PDF → share with an invited person → verify their email → view the original pages → track the visit → revoke access.**
+
+The roadmap below covers that first release and later improvements. Later features can be prioritized after the core experience works.
+
+## Roadmap
+
+### Milestone 1 — Understand DocSend
+
+**Status: research complete.** Reviewed DocSend's official product pages and help articles. This was documentation research, not a hands-on trial account walkthrough.
+
+#### What DocSend does
+
+DocSend lets someone upload a document and share a link to it. The owner can choose access settings, see who visits and how long they spend on each page, and turn off access afterward. [DocSend overview](https://www.docsend.com/how-it-works/).
+
+Its basic workflow is:
+
+**Upload → create a link → choose access settings → share → recipient opens it → owner checks engagement.**
+
+The relevant features are:
+
+- **Document uploads and viewing:** supports PDFs, PowerPoint, Word, and other formats. Our first release will focus on PDFs. [Supported uploads](https://help.dropbox.com/create-upload/dropbox-docsend-upload-files).
+- **Access controls:** email requirements, email verification, allowed viewers, passwords, expiration, and download settings. Asking for an email and verifying ownership of that email are separate options. [Link settings](https://help.dropbox.com/share/dropbox-docsend-link-settings-in-content-library).
+- **Verified recipients:** verification is tied to the device used to open the document. This matters when a link is forwarded. [Email authentication](https://help.dropbox.com/share/dropbox-docsend-email-authentication).
+- **Personalized watermarks:** can show the viewer's email, date, time, and other details. These discourage unauthorized sharing. [Watermarks](https://help.dropbox.com/share/dropbox-docsend-watermarks).
+- **Viewing statistics:** visits, page activity, completion, and document version performance. Time spent is an estimate of viewing, not proof of reading; an idle foreground tab can still count. [Analytics](https://www.docsend.com/features/analytics/), [Time tracking](https://help.dropbox.com/share/dropbox-docsend-visitor-time-on-document).
+- **Updated documents:** replacing a file updates its existing links, and performance can be compared across versions. Recoverable earlier files are a separate requirement we should define for HSI. [Document updates](https://help.dropbox.com/view-edit/dropbox-docsend-update-existing-content).
+- **Later features:** multiple documents under one link and agreements before viewing. Some advanced features depend on the DocSend plan. [Spaces and agreements](https://www.docsend.com/how-it-works/), [Link settings](https://help.dropbox.com/share/dropbox-docsend-link-settings-in-content-library).
+
+#### HSI feature checklist
+
+For the first release, HSI should let a creator:
+
+- Upload a PDF deck or screenplay and preserve its original layout.
+- Create separate sharing links for different recipients.
+- Verify the recipient's email before opening restricted material.
+- Set expiration, revoke access, and choose download permissions.
+- Display a personalized watermark.
+- See visits, actual pages viewed, and approximate viewing time.
+
+Later, add reliable draft history, stronger feedback tools, and sharing multiple documents together.
+
+**Done when:** we can explain the sharing experience we want to build in plain language.
+
+**Result:** the workflow and feature checklist above are ready to use for the HSI comparison.
+
+### Milestone 2 — Compare DocSend with HSI
+
+**Status: code comparison complete; live walkthrough and scope decisions pending.**
+
+Reviewed the existing HSI upload, sharing, viewing, analytics, and version code against the checklist. "Present" below means it exists in the code; it has not yet been confirmed working in a live test environment.
+
+#### Comparison checklist
+
+| Feature | HSI today | What we should do |
+|---|---|---|
+| PDF uploading | Present; the upload approach can hit size limits | Improve support for larger decks |
+| Original PDF layout for external recipients | Needs improvement; shared links display extracted text | Preserve the original pages and images |
+| Separate sharing links | Present | Reuse and test |
+| Recipient access and email verification | Present, with identity-check problems | Fix first so someone cannot claim another person's access |
+| Password, expiration, and link deactivation | Present | Test each setting and how it affects an existing viewer |
+| Download permissions | Basic; the external viewer exports text | Define and enforce the intended file/download behavior |
+| Personalized watermark | Basic; currently a visual overlay | Improve it for the agreed PDF viewing and download behavior |
+| Visits and page statistics | Present; external page numbers come from reconstructed text | Track the real PDF pages and verified viewers |
+| Visit notifications | Present | Check email delivery in the test environment |
+| Notes and confidentiality agreements | Present | Review and improve later |
+| Updates behind existing links | Present | Test that recipients receive the intended version |
+| Recoverable earlier PDF versions | Incomplete | Preserve earlier files in Milestone 8 |
+| Multiple documents under one external link | Not found in the current external sharing flow | Consider in Milestone 10 |
+
+The supporting code references and findings are in [secure-document-sharing-review.md](C:/Users/Yun/OneDrive/Documents/bdap/research/secure-document-sharing-review.md).
+
+#### Prioritized changes
+
+1. **Fix access security — Milestone 3.** Make sure only authorized people can open documents and that verification belongs to the actual viewer.
+2. **Improve PDF uploading and viewing — Milestone 4.** Handle larger decks and preserve their layout.
+3. **Finish sharing controls — Milestone 5.** Make verification, expiry, revocation, downloads, and watermarks work consistently together.
+4. **Improve analytics — Milestone 6.** Report the actual PDF pages, verified recipient, and approximate viewing time.
+5. **Test the complete experience — Milestone 7.** Confirm the core flow before releasing it.
+
+#### Proposed first-release scope
+
+Start with one PDF shared through a link with an external recipient. Include email verification, personalized watermarks, expiration, revocation, download settings, and basic page analytics. Advanced features remain in later milestones.
+
+We still need to settle:
+
+- The maximum PDF size and expected document length.
+- Who owns changes to sharing, login, and storage.
+- Whether controlled access is sufficient, or whether HSI's servers must also be unable to read the document. This affects viewing and AI analysis.
+
+#### Live walkthrough still needed
+
+A complete walkthrough needs a confirmed test version of HSI with sample documents and test recipients. The local project has installed dependencies and a built frontend, but its database, storage, and email connections have not been confirmed as test services. Its local and deployed access paths also differ.
+
+Once the test environment is available, check:
+
+1. Upload and share a sample PDF deck.
+2. Open it as the intended recipient and verify their email.
+3. Check layout and viewing statistics.
+4. Try the link as a different recipient.
+5. Expire or revoke the link and check that future access is denied.
+
+**Done when:** we have a prioritized list of changes and know who owns each part.
+
+**Result so far:** the comparison and priorities are ready. Live behavior, remaining scope, and team ownership are still to be confirmed.
+
+### Milestone 3 — Fix Access Security
+
+- Make sure private documents are accessible only to authorized people.
+- Fix the identity-check problems found in the code review.
+- Make sure entering someone else's email or receiving a forwarded link does not grant their access.
+
+**Done when:** the intended recipient can gain access, while someone claiming their identity cannot.
+
+This is the first implementation milestone.
+
+### Milestone 4 — Improve PDF Uploading and Viewing
+
+- Support decks up to the agreed file size.
+- Preserve the original pages, images, and layout.
+- Give recipients a clear reading experience on desktop and mobile.
+
+**Done when:** a creator can upload a PDF deck and the recipient can read it with its original layout intact.
+
+### Milestone 5 — Complete Sharing Controls
+
+- Let creators choose who can view a document.
+- Complete email verification, expiration, and access revocation.
+- Define and improve download permissions and personalized watermarks.
+- Review existing passcode options and keep the settings easy to understand.
+
+**Done when:** the creator's chosen settings consistently control future access to the document.
+
+### Milestone 6 — Improve Viewing Analytics
+
+- Show who opened a document and when.
+- Track actual document pages and approximate engagement time.
+- Present visits and page activity in a simple owner dashboard.
+
+**Done when:** creators can understand a recipient's engagement with the real document, with timing clearly treated as an estimate.
+
+### Milestone 7 — Test and Release the Core Experience
+
+- Test the complete upload, share, verify, view, track, and revoke flow.
+- Check unauthorized access, forwarded links, expired links, and revoked links.
+- Check larger files, common devices, and clear error messages.
+- Confirm that the released application behaves like the tested version.
+
+**Done when:** the first-release experience works reliably in the agreed release environment.
+
+Check each milestone as it is built; this milestone brings the full experience together.
+
+### Milestone 8 — Add Reliable Document Version History
+
+- Preserve earlier drafts and decks when a creator uploads an update.
+- Decide whether a shared link follows the newest version or stays on a selected version.
+- Show which version a recipient viewed.
+
+**Done when:** creators can recover earlier versions and understand which material was shared and read.
+
+### Milestone 9 — Improve Feedback and Follow-Up
+
+- Review notifications when someone opens a document.
+- Improve recipient feedback and the creator's private notes.
+- Consider confidentiality agreements for sensitive documents.
+- Later, explore AI-assisted engagement summaries and follow-up drafts, with clear rules for using document content and creator review before sending.
+
+**Done when:** creators can act on viewing activity through the features we choose to prioritize.
+
+### Milestone 10 — Expand Based on Real Use
+
+- Consider additional document formats, such as native presentation files.
+- Consider sharing multiple documents together.
+- Consider team permissions and collaboration needs.
+- Prioritize improvements based on feedback from creators and recipients.
+
+**Done when:** each selected expansion solves a demonstrated user need.
+
+## Current Next Step
+
+DocSend research and the HSI code comparison are complete. Finish Milestone 2's live walkthrough and settle the remaining scope and ownership decisions. The first coding milestone is **Milestone 3: fix access security**.
+
+## How We Will Update This Plan
+
+For each milestone, we will add implementation steps, relevant files, decisions, and checks when we reach it. We will mark progress and adjust later milestones as we learn more.
+
+The professional writing editor, AI budgeting, and registration workflows belong to separate CreativeOS workstreams.
